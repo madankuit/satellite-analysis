@@ -18,9 +18,10 @@ dependencies:
   - geopandas
   - fiona
   - rasterio
+  - pyresample
+  - bottleneck
   - pyyaml
   - tqdm
   - jupyterlab
   - ipykernel
-  - pip
 
