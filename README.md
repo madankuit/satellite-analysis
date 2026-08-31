@@ -10,7 +10,9 @@ with a primary focus on **TROPOMI** and **TEMPO** L2/L3 observations (NO2, HCHO,
 ```
 satellite-analysis/
 ├── Regriding/
-│   ├── tropomi_regrid_l2_to_l3.py   # TROPOMI L2 → 0.05° CONUS L3 via OPeNDAP
+│   ├── tropomi_regrid_l2_to_l3.py    # TROPOMI L2 → 0.05° CONUS L3 via OPeNDAP
+│   ├── tropomi_tempo_recalc_match.py # match + recalc TROPOMI VCD on a shared a priori
+│   ├── recalc_vcd_with_apriori.py    # recalculation core (general reference, any a priori)
 │   └── tempo_monthly_means.py        # TEMPO L3 V04 per-UTC-hour monthly means
 ├── Visualization/
 │   └── extract_tempo_at_monitor.py   # TEMPO VCD time-series at a ground monitor
@@ -176,6 +178,28 @@ python Regriding/tropomi_tempo_recalc_match.py \
     --tempo-dir /data/TEMPO/BETA/ \
     --tropomi-test-file /data/TROPOMI_L2/S5P_RPRO_L2__HCHO___....nc
 ```
+
+---
+
+### Recalculation method (reference): `Regriding/recalc_vcd_with_apriori.py`
+
+The **core recalculation**, isolated as a small general reference — no file I/O, no
+pixel matching, no cluster paths. Recompute a tropospheric VCD under a *different* a
+priori profile (MUSICA / GCHP / GEOS-CF) via the TROPOMI ATBD Eq. 4:
+
+```
+VCD_trop*  =  VCD_trop · Σ_trop(x_new) / Σ_trop(AK_trop · x_new)
+```
+
+`x_new` is the new a priori partial-column profile, mass-conservatively interpolated in
+sigma = P/Ps onto the retrieval's own (TM5) layers; `AK_trop` is the tropospheric
+averaging kernel (convert from a stored total-column AK with `AK_trop = AK_total ·
+AMF_total / AMF_trop`, stratosphere zeroed); the troposphere is defined by the a priori
+model's own tropopause. The a priori enters only as a ratio, so its normalization
+cancels — pass partial columns directly, and swap a priori just by changing
+`apriori_profile`. Two functions — `mass_conservative_sigma_interp()` and
+`recalc_tropospheric_vcd()`; run the module directly for a synthetic example. This is
+the shareable insight; the operational per-day matcher lives outside this repo.
 
 ---
 
