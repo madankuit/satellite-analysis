@@ -15,7 +15,8 @@ satellite-analysis/
 │   ├── recalc_vcd_with_apriori.py    # recalculation core (general reference, any a priori)
 │   └── tempo_monthly_means.py        # TEMPO L3 V04 per-UTC-hour monthly means
 ├── Visualization/
-│   └── extract_tempo_at_monitor.py   # TEMPO VCD time-series at a ground monitor
+│   ├── extract_tempo_at_monitor.py     # TEMPO VCD time-series at a ground monitor
+│   └── extract_tropomi_at_monitor.py   # TROPOMI VCD time-series at a ground monitor
 ├── utils/
 │   └── satellite_utils.py            # Shared helper functions
 ├── environment.yml

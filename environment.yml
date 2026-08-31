@@ -20,6 +20,17 @@ dependencies:
   - rasterio
   - pyresample
   - bottleneck
+
+  # NASA Earthdata / GES DISC OPeNDAP access — required by
+  # tropomi_regrid_l2_to_l3.py, tropomi_tempo_recalc_match.py and
+  # extract_tropomi_at_monitor.py, which stream L2 rather than downloading it.
+  - pydap
+  - requests
+  - beautifulsoup4        # imported as bs4
+
+  # Local-time conversion for monitor time series
+  - pytz
+
   - pyyaml
   - tqdm
   - jupyterlab
