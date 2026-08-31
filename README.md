@@ -150,9 +150,11 @@ python Visualization/extract_tempo_at_monitor.py \
 
 ### 4. `Regriding/tropomi_tempo_recalc_match.py`
 
-Match TROPOMI and TEMPO L2 pixels and **recalculate TROPOMI VCD using the GEOS-CF
-a priori** from TEMPO, so both instruments share the same a priori for a fair
-inter-comparison. Uses mass-conservative vertical interpolation (72 → 34 layers).
+**TEMPO–TROPOMI matching.** Match TROPOMI and TEMPO L2 pixels and **recalculate TROPOMI
+VCD using the GEOS-CF a priori** from TEMPO, so both instruments share the same a priori
+for a fair inter-comparison. Uses mass-conservative vertical interpolation (72 → 34
+layers). Method reference: ESS Open Archive
+[doi:10.22541/essoar.15007514/v1](https://essopenarchive.org/doi/abs/10.22541/essoar.15007514/v1).
 
 **Inputs (CLI)**
 
@@ -181,7 +183,11 @@ python Regriding/tropomi_tempo_recalc_match.py \
 
 ---
 
-### Recalculation method (reference): `Regriding/recalc_vcd_with_apriori.py`
+### TEMPO–TROPOMI matching & a-priori VCD recalculation: `Regriding/recalc_vcd_with_apriori.py`
+
+**Method reference:** see the accompanying working paper for the full derivation and
+validation — ESS Open Archive,
+[doi:10.22541/essoar.15007514/v1](https://essopenarchive.org/doi/abs/10.22541/essoar.15007514/v1).
 
 The **core recalculation**, isolated as a small general reference — no file I/O, no
 pixel matching, no cluster paths. Recompute a tropospheric VCD under a *different* a
