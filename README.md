@@ -256,8 +256,9 @@ python Visualization/extract_tropomi_at_monitor.py \
 - Match TROPOMI with TEMPO and recalculate using shared a priori
 
 ### Visualization
-- Extract time series at monitoring sites (TROPOMI and TEMPO)
-- Spatial maps
-- Diurnal cycle plots
+- Extract time series at monitoring sites (TROPOMI and TEMPO), written to CSV
+
+Spatial maps and diurnal-cycle plotting are **not** included here — the two
+scripts above produce the CSV time series those plots are usually built from.
 
 ---
