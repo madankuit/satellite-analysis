@@ -1,0 +1,12 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.ipynb_checkpoints/
+
+# Environments / secrets
+.env
+.netrc
+
+# OS / editor
+.DS_Store
