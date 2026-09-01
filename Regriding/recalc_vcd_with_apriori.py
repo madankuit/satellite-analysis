@@ -15,8 +15,16 @@ Method  (TROPOMI NO2 Product User Manual / ATBD, Eq. 4)
 with the sums over the tropospheric model layers and
 
     x_new    the NEW a priori partial-column profile (e.g. MUSICA, GCHP, or
-             GEOS-CF), mass-conservatively interpolated in sigma = P / Ps onto
-             the retrieval's own vertical grid (here TM5).
+             GEOS-CF), mass-conservatively interpolated onto the retrieval's own
+             vertical grid (here TM5).
+
+             Interpolation is done in sigma = P / Ps, with **each grid divided by
+             its OWN surface pressure**. That matters: the a priori model and the
+             retrieval generally disagree on surface pressure over terrain, and
+             sigma is what makes the two terrain-following grids comparable.
+             Dividing both by the same Ps would cancel and silently reduce this
+             to plain pressure-space interpolation, misplacing the near-surface
+             layers where NO2 is concentrated.
     AK_trop  the tropospheric averaging kernel on that grid. If a product stores
              the TOTAL-column AK, convert with AK_trop = AK_total · AMF_total /
              AMF_trop and zero the stratospheric layers.
@@ -75,7 +83,8 @@ def mass_conservative_sigma_interp(src_edges, src_profile, tgt_edges):
 
 
 def recalc_tropospheric_vcd(vcd_trop, ak_trop, layer_edges_hPa, tropopause_hPa,
-                            apriori_profile, apriori_edges_hPa, surface_pressure_hPa):
+                            apriori_profile, apriori_edges_hPa, surface_pressure_hPa,
+                            apriori_surface_pressure_hPa=None):
     """Recompute a tropospheric VCD under a new a priori profile (ATBD Eq. 4).
 
     Parameters
@@ -87,7 +96,14 @@ def recalc_tropospheric_vcd(vcd_trop, ak_trop, layer_edges_hPa, tropopause_hPa,
     tropopause_hPa      : tropopause pressure — use the a priori model's own.
     apriori_profile     : (n_src,) NEW a priori partial columns [molec cm-2].
     apriori_edges_hPa   : (n_src + 1,) edge pressures of the a priori layers.
-    surface_pressure_hPa: surface pressure.
+    surface_pressure_hPa: the RETRIEVAL's surface pressure.
+    apriori_surface_pressure_hPa
+                        : the A PRIORI MODEL's own surface pressure. Each grid is
+                          converted to sigma with its own Ps, so the two
+                          terrain-following grids line up. Defaults to
+                          `surface_pressure_hPa` — correct only when the model and
+                          the retrieval share a surface pressure; pass the model's
+                          value whenever you have it.
 
     Returns
     -------
@@ -97,9 +113,14 @@ def recalc_tropospheric_vcd(vcd_trop, ak_trop, layer_edges_hPa, tropopause_hPa,
     layer_edges_hPa = np.asarray(layer_edges_hPa, float)
     ak_trop = np.asarray(ak_trop, float)
 
-    # interpolate the a priori onto the retrieval grid in sigma space
+    # Interpolate the a priori onto the retrieval grid in sigma space, each grid
+    # normalised by ITS OWN surface pressure so the terrain-following coordinates
+    # correspond. Using one Ps for both would cancel out and leave plain
+    # pressure-space interpolation.
+    ps_apriori = (surface_pressure_hPa if apriori_surface_pressure_hPa is None
+                  else apriori_surface_pressure_hPa)
     x_new = mass_conservative_sigma_interp(
-        apriori_edges_hPa / surface_pressure_hPa,
+        np.asarray(apriori_edges_hPa, float) / ps_apriori,
         apriori_profile,
         layer_edges_hPa / surface_pressure_hPa,
     )
@@ -117,13 +138,35 @@ if __name__ == "__main__":
     # Minimal illustrative example (synthetic numbers, not physical): swap an
     # a priori and see the recalculated column. Replace the arrays with a real
     # TM5 AK/grid and your model's (MUSICA / GCHP / GEOS-CF) partial columns.
-    ps = 1013.0
-    layer_edges = np.linspace(ps, 1.0, 35)                 # 34 retrieval layers
-    ak = np.linspace(1.3, 0.2, 34)                          # toy tropospheric AK
-    ap_edges = np.linspace(ps, 1.0, 73)                     # 72 a priori layers
-    ap_prof = np.exp(-np.linspace(0, 4, 72)) * 1e15         # toy partial columns
-    out = recalc_tropospheric_vcd(vcd_trop=5e15, ak_trop=ak,
-                                  layer_edges_hPa=layer_edges, tropopause_hPa=150.0,
-                                  apriori_profile=ap_prof, apriori_edges_hPa=ap_edges,
-                                  surface_pressure_hPa=ps)
+    #
+    # Note the model and the retrieval are given DIFFERENT surface pressures, as
+    # they generally have over terrain — each grid is normalised by its own, so
+    # the sigma coordinates correspond.
+    ps_retrieval = 1013.0
+    ps_model     = 950.0
+
+    layer_edges = np.linspace(ps_retrieval, 1.0, 35)        # 34 retrieval layers
+    ak          = np.linspace(1.3, 0.2, 34)                 # toy tropospheric AK
+    ap_edges    = np.linspace(ps_model, 1.0, 73)            # 72 a priori layers
+    ap_prof     = np.exp(-np.linspace(0, 4, 72)) * 1e15     # toy partial columns
+
+    out = recalc_tropospheric_vcd(
+        vcd_trop=5e15, ak_trop=ak,
+        layer_edges_hPa=layer_edges, tropopause_hPa=150.0,
+        apriori_profile=ap_prof, apriori_edges_hPa=ap_edges,
+        surface_pressure_hPa=ps_retrieval,
+        apriori_surface_pressure_hPa=ps_model,
+    )
     print(f"recalculated VCD_trop = {out:.3e} molec cm-2")
+
+    # For contrast: collapsing both grids onto the retrieval's surface pressure
+    # (the default when apriori_surface_pressure_hPa is omitted) misplaces the
+    # near-surface layers, where NO2 is concentrated.
+    naive = recalc_tropospheric_vcd(
+        vcd_trop=5e15, ak_trop=ak,
+        layer_edges_hPa=layer_edges, tropopause_hPa=150.0,
+        apriori_profile=ap_prof, apriori_edges_hPa=ap_edges,
+        surface_pressure_hPa=ps_retrieval,
+    )
+    print(f"  ... ignoring the model's own Ps: {naive:.3e} "
+          f"({100 * abs(naive - out) / out:.1f}% different)")

@@ -198,8 +198,12 @@ priori profile (MUSICA / GCHP / GEOS-CF) via the TROPOMI ATBD Eq. 4:
 VCD_trop*  =  VCD_trop · Σ_trop(x_new) / Σ_trop(AK_trop · x_new)
 ```
 
-`x_new` is the new a priori partial-column profile, mass-conservatively interpolated in
-sigma = P/Ps onto the retrieval's own (TM5) layers; `AK_trop` is the tropospheric
+`x_new` is the new a priori partial-column profile, mass-conservatively interpolated
+onto the retrieval's own (TM5) layers in sigma = P/Ps — **each grid normalised by its
+own surface pressure**, since the model and the retrieval generally disagree on Ps over
+terrain and sigma is what makes the two terrain-following grids correspond (pass
+`apriori_surface_pressure_hPa`; omitting it collapses both onto the retrieval's Ps and
+misplaces the near-surface layers where NO₂ sits); `AK_trop` is the tropospheric
 averaging kernel (convert from a stored total-column AK with `AK_trop = AK_total ·
 AMF_total / AMF_trop`, stratosphere zeroed); the troposphere is defined by the a priori
 model's own tropopause. The a priori enters only as a ratio, so its normalization
